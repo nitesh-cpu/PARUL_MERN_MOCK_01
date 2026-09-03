@@ -1,74 +1,44 @@
 const form = document.getElementById("studentForm");
 const studentCards = document.getElementById("studentCards");
 const statistics = document.getElementById("statistics");
+const aboutStudent = document.getElementById("aboutStudent");
 
-const students = JSON.parse(localStorage.getItem("students")) || [];
-
+let students = JSON.parse(localStorage.getItem("students")) || [];
 let editId = null;
 
 // Form Submit
+form.addEventListener("submit", e => {
+    e.preventDefault();
+    if (!validateForm()) return;
 
-form.addEventListener("submit", function (event) {
-    event.preventDefault();
-    if (!validateForm()) {
-        return;
-    }
+    const gender = document.querySelector('input[name="gender"]:checked');
+    const skills = [...document.querySelectorAll('input[name="skills"]:checked')]
+        .map(x => x.value);
+    const photo = document.getElementById("profilePhoto").files[0];
 
-    const name = document.getElementById("studentName").value.trim();
-    const email = document.getElementById("email").value.trim();
-    const phone = document.getElementById("phone").value.trim();
-    const dob = document.getElementById("dob").value;
-
-    const gender = document.querySelector(
-        'input[name="gender"]:checked'
-    ).value;
-
-    const course = document.getElementById("course").value;
-
-    const skills = [...document.querySelectorAll(
-        'input[name="skills"]:checked'
-    )].map(skill => skill.value);
-
-    const about = document.getElementById("aboutStudent").value.trim();
-
-    const photoInput = document.getElementById("profilePhoto");
-    const photoFile = photoInput.files[0];
+    const data = {
+        name: document.getElementById("studentName").value.trim(),
+        email: document.getElementById("email").value.trim(),
+        phone: document.getElementById("phone").value.trim(),
+        dob: document.getElementById("dob").value,
+        gender: gender.value,
+        course: document.getElementById("course").value,
+        skills,
+        about: aboutStudent.value.trim()
+    };
 
     if (editId !== null) {
-
-        const student = students.find(student => student.id === editId);
-
-        student.name = name;
-        student.email = email;
-        student.phone = phone;
-        student.dob = dob;
-        student.gender = gender;
-        student.course = course;
-        student.skills = skills;
-        student.about = about;
-
-        if (photoFile) {
-            student.photo = URL.createObjectURL(photoFile);
-        }
-
+        const student = students.find(x => x.id === editId);
+        Object.assign(student, data);
+        if (photo) student.photo = URL.createObjectURL(photo);
+        alert("Student Updated Successfully!");
     } else {
-
-        const student = {
+        students.push({
             id: Date.now(),
-            name: name,
-            email: email,
-            phone: phone,
-            dob: dob,
-            gender: gender,
-            course: course,
-            skills: skills,
-            about: about,
-            photo: photoFile
-                ? URL.createObjectURL(photoFile)
-                : ""
-        };
-
-        students.push(student);
+            ...data,
+            photo: photo ? URL.createObjectURL(photo) : ""
+        });
+        alert("Student Registered Successfully!");
     }
 
     saveStudents();
@@ -77,9 +47,8 @@ form.addEventListener("submit", function (event) {
     resetForm();
 });
 
-//  Validation the form 
+// Validation the form
 function validateForm() {
-
     clearErrors();
     let valid = true;
 
@@ -87,446 +56,216 @@ function validateForm() {
     const email = document.getElementById("email").value.trim();
     const phone = document.getElementById("phone").value.trim();
     const dob = document.getElementById("dob").value;
-    const gender = document.querySelector(
-        'input[name="gender"]:checked'
-    );
+    const gender = document.querySelector('input[name="gender"]:checked');
     const course = document.getElementById("course").value;
-
-    const skills = document.querySelectorAll(
-        'input[name="skills"]:checked'
-    );
-
-    const about = document.getElementById("aboutStudent").value.trim();
+    const skills = document.querySelectorAll('input[name="skills"]:checked');
+    const about = aboutStudent.value.trim();
     const photo = document.getElementById("profilePhoto").files[0];
 
-    /* Name */
-
-    const nameRegex = /^[A-Za-z ]{3,40}$/;
-
+    // Name
     if (!name) {
         showError("studentName", "Name is required");
         valid = false;
-    } else if (!nameRegex.test(name)) {
-        showError(
-            "studentName",
-            "Name must be 3-40 letters and spaces only"
-        );
+    } else if (!/^[A-Za-z ]{3,40}$/.test(name)) {
+        showError("studentName", "Name must be 3-40 letters");
         valid = false;
     }
 
-    /* Email */
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
+    // Email
     if (!email) {
         showError("email", "Email is required");
         valid = false;
-    } else if (!emailRegex.test(email)) {
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         showError("email", "Enter a valid email");
         valid = false;
     }
 
-    /* Phone */
-
-    const phoneRegex = /^\d{10}$/;
-
+    // Phone
     if (!phone) {
         showError("phone", "Phone number is required");
         valid = false;
-    } else if (!phoneRegex.test(phone)) {
-        showError("phone", "Phone must contain exactly 10 digits");
+    } else if (!/^\d{10}$/.test(phone)) {
+        showError("phone", "Phone must contain 10 digits");
         valid = false;
     }
 
-    /* DOB */
+    // DOB
     if (!dob) {
-
         showError("dob", "Date of birth is required");
         valid = false;
-
     } else {
-
-        const birthDate = new Date(dob);
-        const today = new Date();
-
-        if (birthDate > today) {
-
+        const age = new Date().getFullYear() - new Date(dob).getFullYear();
+        if (new Date(dob) > new Date()) {
             showError("dob", "Future date is not allowed");
             valid = false;
-
-        } else {
-
-            let age =
-                today.getFullYear() -
-                birthDate.getFullYear();
-
-            const month =
-                today.getMonth() -
-                birthDate.getMonth();
-
-            if (
-                month < 0 ||
-                (
-                    month === 0 &&
-                    today.getDate() < birthDate.getDate()
-                )
-            ) {
-                age--;
-            }
-
-            if (age < 15) {
-                showError(
-                    "dob",
-                    "Student must be at least 15 years old"
-                );
-                valid = false;
-            }
+        } else if (age < 15) {
+            showError("dob", "Student must be at least 15 years old");
+            valid = false;
         }
     }
 
-    /* Gender */
+    // Gender
     if (!gender) {
         showError("gender", "Select gender");
         valid = false;
     }
 
-    /* Course */
+    // Course
     if (!course) {
         showError("course", "Select a course");
         valid = false;
     }
 
-    /* Skills */
-
-    if (skills.length === 0) {
+    // Skills
+    if (!skills.length) {
         showError("skills", "Select at least one skill");
         valid = false;
     }
 
-    /* About */
-
+    // About
     if (!about) {
-
         showError("aboutStudent", "About student is required");
         valid = false;
-
     } else if (about.length < 20) {
-
-        showError(
-            "aboutStudent",
-            "Minimum 20 characters required"
-        );
+        showError("aboutStudent", "Minimum 20 characters required");
         valid = false;
-
     } else if (about.length > 200) {
-
-        showError(
-            "aboutStudent",
-            "Maximum 200 characters allowed"
-        );
+        showError("aboutStudent", "Maximum 200 characters allowed");
         valid = false;
     }
 
-    /* Photo */
-
+    // Photo
     if (!editId && !photo) {
-
-        showError(
-            "profilePhoto",
-            "Profile photo is required"
-        );
-
+        showError("profilePhoto", "Profile photo is required");
         valid = false;
     }
 
-    if (photo) {
-
-        const allowedTypes = [
-            "image/jpeg",
-            "image/png"
-        ];
-
-        if (!allowedTypes.includes(photo.type)) {
-
-            showError(
-                "profilePhoto",
-                "Only JPG, JPEG and PNG files are allowed"
-            );
-
-            valid = false;
-        }
+    if (photo && !["image/jpeg", "image/png"].includes(photo.type)) {
+        showError("profilePhoto", "Only JPG, JPEG and PNG allowed");
+        valid = false;
     }
 
     return valid;
 }
 
 // Error Message
-
-function showError(inputId, message) {
-
-    const input = document.getElementById(inputId);
-    let error = input.parentElement.querySelector(".error");
-
-    if (!error) {
-        error = document.createElement("small");
-        error.classList.add("error");
-        input.parentElement.appendChild(error);
-    }
-
+function showError(id, message) {
+    const input = document.getElementById(id);
+    const error = document.createElement("small");
+    error.className = "error";
     error.textContent = message;
+    input.parentElement.appendChild(error);
 }
 
 function clearErrors() {
-
-    document.querySelectorAll(".error").forEach(error => {
-        error.remove();
-    });
+    document.querySelectorAll(".error").forEach(x => x.remove());
 }
 
-//  counting the Characters
-const aboutStudent = document.getElementById("aboutStudent");
-aboutStudent.addEventListener("input", function () {
-    let counter = aboutStudent.parentElement.querySelector(
-        ".character-counter"
-    );
+// counting the Characters
+aboutStudent.addEventListener("input", () => {
+    let counter = aboutStudent.parentElement.querySelector(".character-counter");
 
     if (!counter) {
         counter = document.createElement("small");
-        counter.classList.add("character-counter");
+        counter.className = "character-counter";
         aboutStudent.parentElement.appendChild(counter);
     }
 
-    counter.textContent =
-        `${aboutStudent.value.length} / 200`;
+    counter.textContent = `${aboutStudent.value.length} / 200`;
 });
-//  Render Students
+
+// Render Students
 function renderStudents() {
-
     studentCards.innerHTML = "";
-    const searchText =
-        document.getElementById("searchStudent")
-            .value
-            .toLowerCase();
-    const selectedCourse =
-        document.getElementById("filterCourse").value;
 
-    const filteredStudents = students.filter(student => {
+    const search = document.getElementById("searchStudent").value.toLowerCase();
+    const course = document.getElementById("filterCourse").value;
 
-        const nameMatch =
-            student.name
-                .toLowerCase()
-                .includes(searchText);
+    const result = students.filter(s =>
+        s.name.toLowerCase().includes(search) &&
+        (!course || s.course === course)
+    );
 
-        const courseMatch =
-            selectedCourse === "" ||
-            student.course === selectedCourse;
-
-        return nameMatch && courseMatch;
-    });
-
-    if (filteredStudents.length === 0) {
-
-        const message = document.createElement("p");
-        message.textContent = "No students found";
-
-        studentCards.appendChild(message);
+    if (!result.length) {
+        studentCards.innerHTML = "<p>No students found</p>";
         return;
     }
 
-    filteredStudents.forEach(student => {
-
+    result.forEach(s => {
         const card = document.createElement("div");
-        card.classList.add("student-card");
+        card.className = "student-card";
+        card.dataset.id = s.id;
 
-        card.setAttribute("data-id", student.id);
-
-        /* Photo */
-
-        const img = document.createElement("img");
-
-        img.src = student.photo;
-        img.alt = student.name;
-
-        /* Name */
-
-        const heading = document.createElement("h3");
-        heading.textContent = student.name;
-
-        /* Information */
-
-        const email = document.createElement("p");
-        email.textContent = `Email: ${student.email}`;
-
-        const phone = document.createElement("p");
-        phone.textContent = `Phone: ${student.phone}`;
-
-        const dob = document.createElement("p");
-        dob.textContent = `DOB: ${student.dob}`;
-
-        const gender = document.createElement("p");
-        gender.textContent = `Gender: ${student.gender}`;
-
-        const course = document.createElement("p");
-        course.textContent = `Course: ${student.course}`;
-
-        /* Skills */
-
-        const skillsTitle = document.createElement("p");
-        skillsTitle.textContent = "Skills:";
-
-        const skillsBox = document.createElement("div");
-        skillsBox.classList.add("skills");
-
-        student.skills.forEach(skill => {
-
-            const skillSpan = document.createElement("span");
-
-            skillSpan.classList.add("skill");
-            skillSpan.textContent = skill;
-
-            skillsBox.appendChild(skillSpan);
-        });
-
-        /* About */
-
-        const about = document.createElement("p");
-        about.textContent = `About: ${student.about}`;
-
-        const editButton = document.createElement("button");
-
-        editButton.classList.add("edit-btn");
-        editButton.textContent = "Edit";
-
-        const deleteButton = document.createElement("button");
-
-        deleteButton.classList.add("delete-btn");
-        deleteButton.textContent = "Delete";
-
-        card.append(
-            img,
-            heading,
-            email,
-            phone,
-            dob,
-            gender,
-            course,
-            skillsTitle,
-            skillsBox,
-            about,
-            editButton,
-            deleteButton
-        );
+        card.innerHTML = `
+            ${s.photo ? `<img src="${s.photo}" alt="${s.name}">` : ""}
+            <h3>${s.name}</h3>
+            <p>Email: ${s.email}</p>
+            <p>Phone: ${s.phone}</p>
+            <p>DOB: ${s.dob}</p>
+            <p>Gender: ${s.gender}</p>
+            <p>Course: ${s.course}</p>
+            <p>Skills: ${s.skills.join(", ")}</p>
+            <p>About: ${s.about}</p>
+            <button class="edit-btn">Edit</button>
+            <button class="delete-btn">Delete</button>
+        `;
 
         studentCards.appendChild(card);
     });
 }
 
-//  Event Delegation
-studentCards.addEventListener("click", function (event) {
-
-    const card = event.target.closest(".student-card");
-
+// Event Delegation
+studentCards.addEventListener("click", e => {
+    const card = e.target.closest(".student-card");
     if (!card) return;
 
     const id = Number(card.dataset.id);
 
-    /* Delete */
+    // Delete
+    if (e.target.classList.contains("delete-btn")) {
+        if (!confirm("Are you sure you want to delete this student?")) return;
 
-    if (event.target.classList.contains("delete-btn")) {
-
-        if (!confirm("Are you sure you want to delete this student?")) {
-            return;
-        }
-
-        const index = students.findIndex(
-            student => student.id === id
-        );
-
-        if (index !== -1) {
-            students.splice(index, 1);
-        }
-
+        students = students.filter(s => s.id !== id);
         saveStudents();
         renderStudents();
         updateStatistics();
     }
 
-    /* Edit */
+    // Edit
+    if (e.target.classList.contains("edit-btn")) {
+        const s = students.find(x => x.id === id);
+        if (!s) return;
 
-    if (event.target.classList.contains("edit-btn")) {
+        document.getElementById("studentName").value = s.name;
+        document.getElementById("email").value = s.email;
+        document.getElementById("phone").value = s.phone;
+        document.getElementById("dob").value = s.dob;
+        document.getElementById("course").value = s.course;
+        aboutStudent.value = s.about;
 
-        const student = students.find(
-            student => student.id === id
+        document.querySelectorAll('input[name="gender"]').forEach(x =>
+            x.checked = x.value === s.gender
         );
 
-        if (!student) return;
-
-        document.getElementById("studentName").value =
-            student.name;
-
-        document.getElementById("email").value =
-            student.email;
-
-        document.getElementById("phone").value =
-            student.phone;
-
-        document.getElementById("dob").value =
-            student.dob;
-
-        document.getElementById("course").value =
-            student.course;
-
-        document.getElementById("aboutStudent").value =
-            student.about;
-
-        document.querySelectorAll(
-            'input[name="gender"]'
-        ).forEach(input => {
-            input.checked =
-                input.value === student.gender;
-        });
-
-        document.querySelectorAll(
-            'input[name="skills"]'
-        ).forEach(input => {
-            input.checked =
-                student.skills.includes(input.value);
-        });
+        document.querySelectorAll('input[name="skills"]').forEach(x =>
+            x.checked = s.skills.includes(x.value)
+        );
 
         editId = id;
-        document.getElementById("registerBtn").textContent =
-            "Update Student";
-
-        window.scrollTo({
-            top: 0,
-            behavior: "smooth"
-        });
+        document.getElementById("registerBtn").textContent = "Update Student";
+        window.scrollTo({ top: 0, behavior: "smooth" });
     }
 });
 
-//  Search
+// Search
 document.getElementById("searchStudent")
     .addEventListener("input", renderStudents);
 
 document.getElementById("filterCourse")
     .addEventListener("change", renderStudents);
 
-
+// Statistics
 function updateStatistics() {
-
-    statistics.innerHTML = "";
-
-    const total = document.createElement("div");
-
-    total.classList.add("stat-card");
-
-    total.innerHTML = `
-        <h3>Total Students</h3>
-        <p>${students.length}</p>
-    `;
-
-    statistics.appendChild(total);
-
     const courses = [
         "Web Development",
         "UI/UX",
@@ -536,81 +275,54 @@ function updateStatistics() {
         "Cloud Computing"
     ];
 
+    statistics.innerHTML = `
+        <div class="stat-card">
+            <h3>Total Students</h3>
+            <p>${students.length}</p>
+        </div>
+    `;
+
     courses.forEach(course => {
+        const count = students.filter(s => s.course === course).length;
 
-        const count = students.filter(
-            student => student.course === course
-        ).length;
-
-        const box = document.createElement("div");
-
-        box.classList.add("stat-card");
-
-        box.innerHTML = `
-            <h3>${course}</h3>
-            <p>${count}</p>
+        statistics.innerHTML += `
+            <div class="stat-card">
+                <h3>${course}</h3>
+                <p>${count}</p>
+            </div>
         `;
-
-        statistics.appendChild(box);
     });
 }
+
 // saving the data
 function saveStudents() {
-    localStorage.setItem(
-        "students",
-        JSON.stringify(students)
-    );
+    localStorage.setItem("students", JSON.stringify(students));
 }
 
+// Reset Form
+function resetForm() {
+    form.reset();
+    clearErrors();
+    aboutStudent.value = "";
+    editId = null;
+    document.getElementById("registerBtn").textContent = "Register Student";
 
-document.getElementById("resetBtn")
-    .addEventListener("click", function () {
+    const counter = aboutStudent.parentElement.querySelector(".character-counter");
+    if (counter) counter.textContent = "0 / 200";
+}
 
-        setTimeout(() => {
+document.getElementById("resetBtn").addEventListener("click", resetForm);
 
-            clearErrors();
-
-            aboutStudent.value = "";
-
-            const counter =
-                aboutStudent.parentElement
-                    .querySelector(".character-counter");
-
-            if (counter) {
-                counter.textContent = "0 / 200";
-            }
-
-            editId = null;
-
-            document.getElementById("registerBtn")
-                .textContent = "Register Student";
-
-        }, 0);
-    });
-
-    // removing the error
+// removing the error
 document.querySelectorAll(
     "#studentForm input, #studentForm select, #studentForm textarea"
 ).forEach(input => {
-
-    input.addEventListener("input", function () {
-
-        const error =
-            input.parentElement.querySelector(".error");
-
-        if (error) {
-            error.remove();
-        }
+    input.addEventListener("input", () => {
+        input.parentElement.querySelector(".error")?.remove();
     });
 
-    input.addEventListener("change", function () {
-
-        const error =
-            input.parentElement.querySelector(".error");
-
-        if (error) {
-            error.remove();
-        }
+    input.addEventListener("change", () => {
+        input.parentElement.querySelector(".error")?.remove();
     });
 });
 
