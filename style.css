@@ -113,11 +113,6 @@ textarea {
     min-height: 120px;
 }
 
-
-/* ========================================
-   Fieldsets
-======================================== */
-
 fieldset {
     border: 1px solid #cbd5e1;
     border-radius: 7px;
@@ -168,7 +163,6 @@ input[type="file"]:hover {
     background-color: #eff6ff;
 }
 
-/* Small Text */
 
 small {
     color: #64748b;
@@ -176,8 +170,6 @@ small {
     font-size: 13px;
 }
 
-/* Full Width Form Fields
- */
 #studentForm .form-group:nth-of-type(7),
 #studentForm .form-group:nth-of-type(8) {
     grid-column: 1 / -1;
