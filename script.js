@@ -392,14 +392,10 @@ function renderStudents() {
         const about = document.createElement("p");
         about.textContent = `About: ${student.about}`;
 
-        /* Edit */
-
         const editButton = document.createElement("button");
 
         editButton.classList.add("edit-btn");
         editButton.textContent = "Edit";
-
-        /* Delete */
 
         const deleteButton = document.createElement("button");
 
